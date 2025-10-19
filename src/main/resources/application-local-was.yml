@@ -1,0 +1,108 @@
+spring:
+  application:
+    name: dailyfeed-batch
+  # Spring Batch 설정
+  batch:
+    job:
+      enabled: false  # 애플리케이션 시작 시 자동 실행 방지
+    jdbc:
+      initialize-schema: always  # 배치 메타데이터 테이블 자동 생성
+  # H2 콘솔 활성화
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  data:
+    redis:
+      port: ${REDIS_PORT:26379}
+      host: ${REDIS_HOST:localhost}
+      password: ${REDIS_PASSWORD:}
+    mongodb:
+      protocol: mongodb # mongodb+srv or mongodb (atlas 에서만 mongodb+srv)
+      uri: ${MONGODB_CONNECTION_URI:mongodb://localhost:27017/dailyfeed?directConnection=true}
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100
+  # 데이터소스 설정
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: ${MYSQL_JDBC_URL:jdbc:mysql://localhost:23306/dailyfeed?characterEncoding=UTF-8&serverTimezone=UTC&rewriteBatchedStatements=true}
+    username: ${MYSQL_USERNAME:dailyfeed}
+    password: ${MYSQL_PASSWORD:hitEnter###}
+    hikari:
+      jdbc-url: ${MYSQL_JDBC_URL:jdbc:mysql://localhost:23306/dailyfeed?characterEncoding=UTF-8&serverTimezone=UTC&rewriteBatchedStatements=true}
+      driver-class-name: com.mysql.jdbc.Driver
+      username: ${MYSQL_USERNAME:dailyfeed}
+      password: ${MYSQL_PASSWORD:hitEnter###}
+      schema: ${MYSQL_SCHEMA:dailyfeed}
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    click.dailyfeed.batch: DEBUG
+    org.springframework.batch: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+
+dailyfeed:
+  batch:
+    restore-failure:
+      member-activity:
+        publisher-file-path: ./kafka-failure-storage
+        listener-file-path: ./kafka-listener-failure-storage
+
+
+infrastructure:
+  mongodb:
+    timeline:
+      database: dailyfeed
+  redis:
+    event-queue:
+      member-activity-event:
+        list-key: MEMBER_ACTIVITY_EVENT_HISTORY
+        dead-letter-list-key: MEMBER_ACTIVITY_EVENT_HISTORY_DEAD
+        batch-size: 1000
+  kafka:
+    default:
+      producer:
+        partition: 6
+        replication-factor: 2
+        compression: snappy
+        retention-ms: 604800000 # 7일
+        operation-timeout-seconds: 30
+    topic:
+      post-activity:
+        prefix: post-activity-
+        prefix-date-format: yyyyMMdd
+        retention-ms: 604800000 # 7일
+        min-insync.replicas: 1 # 쓰기 작업에 필요한 최소 동기화된 레플리카 수
+    consumers:
+      # Post Activity Consumer
+      post-activity:
+        group-id: post-activity-consumer-group
+        concurrency: 3
+      # User Activity Consumer 설정
+      user-activity:
+        group-id: user-activity-consumer-group
+        concurrency: 2
+      # Notification Consumer 설정
+      notification:
+        group-id: notification-consumer-group
+        concurrency: 1
+server:
+  port: ${SERVER_PORT:8086}
+#  servlet:
+#    context-path: /
+#  compression:
+#    enabled: true
+#    mime-types: application/json,text/plain
+#    min-response-size: 1024
