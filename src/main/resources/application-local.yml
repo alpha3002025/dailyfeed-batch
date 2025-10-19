@@ -1,16 +1,92 @@
 spring:
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:batchdb
-    username: sa
-    password:
-
+  application:
+    name: dailyfeed-batch
+  # Spring Batch 설정
+  batch:
+    job:
+      enabled: false  # 애플리케이션 시작 시 자동 실행 방지
+    jdbc:
+      initialize-schema: always  # 배치 메타데이터 테이블 자동 생성
+  # H2 콘솔 활성화
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  data:
+    redis:
+      port: ${REDIS_PORT:26379}
+      host: ${REDIS_HOST:localhost}
+      password: ${REDIS_PASSWORD:}
+    mongodb:
+      protocol: mongodb # mongodb+srv or mongodb (atlas 에서만 mongodb+srv)
+      uri: ${MONGODB_CONNECTION_URI:mongodb://localhost:27017/dailyfeed?directConnection=true}
+  # JPA 설정
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     show-sql: true
-
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100
+  # 데이터소스 설정
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: ${MYSQL_JDBC_URL:jdbc:mysql://localhost:23306/dailyfeed?characterEncoding=UTF-8&serverTimezone=UTC&rewriteBatchedStatements=true}
+    username: ${MYSQL_USERNAME:dailyfeed}
+    password: ${MYSQL_PASSWORD:hitEnter###}
+    hikari:
+      jdbc-url: ${MYSQL_JDBC_URL:jdbc:mysql://localhost:23306/dailyfeed?characterEncoding=UTF-8&serverTimezone=UTC&rewriteBatchedStatements=true}
+      driver-class-name: com.mysql.jdbc.Driver
+      username: ${MYSQL_USERNAME:dailyfeed}
+      password: ${MYSQL_PASSWORD:hitEnter###}
+      schema: ${MYSQL_SCHEMA:dailyfeed}
+    ## kafka
+    kafka:
+      bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
+      listener:
+        ack-mode: manual_immediate # 수동 커밋
+        concurrency: 3 # 컨슈머 스레드 수
+        poll-timeout: 3000
+        missing-topics-fatal: false  # 토픽이 없어도 시작 가능
+      consumer:
+        group-id: ${spring.application.name}-group # 이거 어떻게 할까... 일단 지금 코드에서는 필요없고 다음기능에서 필요
+        auto-offset-reset: latest
+        enable-auto-commit: false # At Least Once 를 위한 수동 커밋
+        max-poll-records: 500
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+        properties:
+          spring.json.trusted.packages: "click.dailyfeed.code"
+          session.timeout.ms: 30000
+          heartbeat.interval.ms: 10000
+          max.poll.interval.ms: 300000
+          isolation.level: read_committed
+          partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+      producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+        acks: 1
+        retries: 3
+        batch-size: 32768
+        linger-ms: 20
+        buffer-memory: 33554432
+        compression-type: snappy
+        properties:
+          enable.idempotence: false
+          max.in.flight.requests.per.connection: 5
+          spring.json.add.type.headers: false
+          #        spring.json.trusted.packages: "click.dailyfeed.code.domain.content.post.dto"
+          spring.json.trusted.packages: "*"
+          retry.backoff.ms: 100
+          request.timeout.ms: 30000
+# 로깅 설정
 logging:
   level:
+    root: INFO
     click.dailyfeed.batch: DEBUG
     org.springframework.batch: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
