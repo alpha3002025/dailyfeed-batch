@@ -8,9 +8,17 @@ dependencyManagement {
 }
 
 dependencies {
+    implementation(project(":dailyfeed-code"))
+    implementation(project(":dailyfeed-redis-support"))
+    implementation(project(":dailyfeed-kafka-support"))
+    implementation(project(":dailyfeed-code"))
+
     // spring boot
+    implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-batch")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
     // jakarta
