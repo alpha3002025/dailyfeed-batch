@@ -137,7 +137,7 @@ public class ActivityStaleDeadLetterMongoDBCleanupBatchConfig {
         return redisDLQDocument -> {
             try {
                 log.debug("Processing stale RedisDLQDocument: redisKey={}, createdAt={}",
-                        redisDLQDocument.getRedisKey(), redisDLQDocument.getCreatedAt());
+                        redisDLQDocument.getMessageKey(), redisDLQDocument.getCreatedAt());
 
                 // JSON 페이로드를 MemberActivityMessage로 변환
                 MemberActivityTransportDto.MemberActivityMessage memberActivityMessage =
@@ -151,14 +151,14 @@ public class ActivityStaleDeadLetterMongoDBCleanupBatchConfig {
                         memberActivityMapper.fromEvent(memberActivityMessage.getEvent());
 
                 log.debug("Successfully converted stale document to MemberActivityDocument: redisKey={}",
-                        redisDLQDocument.getRedisKey());
+                        redisDLQDocument.getMessageKey());
 
                 // RedisDLQDocument와 MemberActivityDocument 함께 반환
                 return new ProcessedItem(redisDLQDocument, memberActivityDocument);
 
             } catch (Exception e) {
                 log.error("Error processing stale RedisDLQDocument: redisKey={}, error={}",
-                        redisDLQDocument.getRedisKey(), e.getMessage(), e);
+                        redisDLQDocument.getMessageKey(), e.getMessage(), e);
                 // 처리 실패 시 null 반환 (건너뜀)
                 return null;
             }
@@ -199,10 +199,10 @@ public class ActivityStaleDeadLetterMongoDBCleanupBatchConfig {
                         redisDLQDoc.markAsCompleted();
                         redisDLQRepository.save(redisDLQDoc);
                         updatedCount++;
-                        log.debug("Marked stale document as completed: redisKey={}", redisDLQDoc.getRedisKey());
+                        log.debug("Marked stale document as completed: redisKey={}", redisDLQDoc.getMessageKey());
                     } catch (Exception e) {
                         log.error("Failed to update isCompleted for stale document redisKey={}: {}",
-                                redisDLQDoc.getRedisKey(), e.getMessage(), e);
+                                redisDLQDoc.getMessageKey(), e.getMessage(), e);
                     }
                 }
 
