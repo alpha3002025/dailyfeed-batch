@@ -11,7 +11,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableScheduling
 @EnableMongoAuditing
 @EnableMongoRepositories(
-        basePackages = "click.dailyfeed.batch.domain.**.repository.mongo",
+        basePackages = {
+                "click.dailyfeed.batch.domain.**.repository.mongo",
+                "click.dailyfeed.deadletter.domain.**.repository.mongo"
+        },
         mongoTemplateRef = "mongoTemplate"
 )
 @EnableTransactionManagement

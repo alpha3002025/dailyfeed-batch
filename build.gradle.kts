@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":dailyfeed-code"))
     implementation(project(":dailyfeed-redis-support"))
     implementation(project(":dailyfeed-kafka-support"))
+    implementation(project(":dailyfeed-deadletter-support"))
     implementation(project(":dailyfeed-code"))
 
     // spring boot
