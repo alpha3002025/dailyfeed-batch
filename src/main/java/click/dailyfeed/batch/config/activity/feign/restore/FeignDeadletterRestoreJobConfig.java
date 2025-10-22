@@ -1,9 +1,9 @@
 package click.dailyfeed.batch.config.activity.feign.restore;
 
-import click.dailyfeed.batch.domain.activity.deadletters.document.FeignDeadLetterDocument;
-import click.dailyfeed.batch.domain.activity.deadletters.mongo.FeignDeadLetterRepository;
 import click.dailyfeed.batch.domain.activity.member.document.MemberActivityDocument;
 import click.dailyfeed.batch.domain.activity.member.repository.mongo.MemberActivityMongoRepository;
+import click.dailyfeed.deadletter.domain.deadletter.document.FeignDeadLetterDocument;
+import click.dailyfeed.deadletter.domain.deadletter.repository.mongo.FeignDeadLetterRepository;
 import click.dailyfeed.code.domain.activity.dto.MemberActivityDto;
 import click.dailyfeed.code.domain.activity.type.MemberActivityType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +34,7 @@ public class FeignDeadletterRestoreJobConfig {
     private final MemberActivityMongoRepository memberActivityMongoRepository;
     private final ObjectMapper objectMapper;
 
-    // ThreadLocal로 현재 처리 중인 FeignDeadLetterDocument들을 추적 (롤백용)
+    // ThreadLocal로 현재 처리 중인 FeignDeadLetterDocument 들을 추적 (롤백용)
     private static final ThreadLocal<List<FeignDeadLetterDocument>> currentBatchDocuments =
             new ThreadLocal<>();
 
