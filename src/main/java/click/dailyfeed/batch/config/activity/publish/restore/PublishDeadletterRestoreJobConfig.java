@@ -1,11 +1,9 @@
 package click.dailyfeed.batch.config.activity.publish.restore;
 
-import click.dailyfeed.batch.domain.activity.member.document.MemberActivityDocument;
-import click.dailyfeed.batch.domain.activity.member.repository.mongo.MemberActivityMongoRepository;
+import click.dailyfeed.deadletter.domain.deadletter.document.KafkaListenerDeadLetterDocument;
 import click.dailyfeed.deadletter.domain.deadletter.document.KafkaPublisherDeadLetterDocument;
+import click.dailyfeed.deadletter.domain.deadletter.repository.mongo.KafkaListenerDeadLetterMongoTemplate;
 import click.dailyfeed.deadletter.domain.deadletter.repository.mongo.KafkaPublisherDeadLetterRepository;
-import click.dailyfeed.code.domain.activity.dto.MemberActivityDto;
-import click.dailyfeed.code.domain.activity.type.MemberActivityType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -31,7 +29,7 @@ import java.util.List;
 public class PublishDeadletterRestoreJobConfig {
 
     private final KafkaPublisherDeadLetterRepository kafkaPublisherDeadLetterRepository;
-    private final MemberActivityMongoRepository memberActivityMongoRepository;
+    private final KafkaListenerDeadLetterMongoTemplate kafkaListenerDeadLetterMongoTemplate;
     private final ObjectMapper objectMapper;
 
     // ThreadLocal로 현재 처리 중인 KafkaPublisherDeadLetterDocument 들을 추적 (롤백용)
@@ -40,10 +38,10 @@ public class PublishDeadletterRestoreJobConfig {
 
     public PublishDeadletterRestoreJobConfig(
             KafkaPublisherDeadLetterRepository kafkaPublisherDeadLetterRepository,
-            MemberActivityMongoRepository memberActivityMongoRepository,
+            KafkaListenerDeadLetterMongoTemplate kafkaListenerDeadLetterMongoTemplate,
             ObjectMapper objectMapper) {
         this.kafkaPublisherDeadLetterRepository = kafkaPublisherDeadLetterRepository;
-        this.memberActivityMongoRepository = memberActivityMongoRepository;
+        this.kafkaListenerDeadLetterMongoTemplate = kafkaListenerDeadLetterMongoTemplate;
         this.objectMapper = objectMapper;
     }
 
@@ -61,13 +59,13 @@ public class PublishDeadletterRestoreJobConfig {
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
             ItemReader<List<KafkaPublisherDeadLetterDocument>> kafkaPublisherDeadLetterReader,
-            ItemProcessor<List<KafkaPublisherDeadLetterDocument>, List<MemberActivityDocument>> kafkaPublisherDeadLetterProcessor,
-            ItemWriter<List<MemberActivityDocument>> publishMemberActivityWriter) {
+            ItemProcessor<List<KafkaPublisherDeadLetterDocument>, List<KafkaListenerDeadLetterDocument>> kafkaPublisherDeadLetterProcessor,
+            ItemWriter<List<KafkaListenerDeadLetterDocument>> kafkaListenerDeadLetterWriter) {
         return new StepBuilder("publishDeadletterRestoreStep", jobRepository)
-                .<List<KafkaPublisherDeadLetterDocument>, List<MemberActivityDocument>>chunk(1, transactionManager)
+                .<List<KafkaPublisherDeadLetterDocument>, List<KafkaListenerDeadLetterDocument>>chunk(1, transactionManager)
                 .reader(kafkaPublisherDeadLetterReader)
                 .processor(kafkaPublisherDeadLetterProcessor)
-                .writer(publishMemberActivityWriter)
+                .writer(kafkaListenerDeadLetterWriter)
                 .build();
     }
 
@@ -119,74 +117,38 @@ public class PublishDeadletterRestoreJobConfig {
 
     @Bean
     @StepScope
-    public ItemProcessor<List<KafkaPublisherDeadLetterDocument>, List<MemberActivityDocument>> kafkaPublisherDeadLetterProcessor() {
+    public ItemProcessor<List<KafkaPublisherDeadLetterDocument>, List<KafkaListenerDeadLetterDocument>> kafkaPublisherDeadLetterProcessor() {
         return documents -> {
             if (documents.isEmpty()) {
                 log.debug("Empty document list, skipping processing");
                 return null;
             }
 
-            List<MemberActivityDocument> memberActivityDocuments = new ArrayList<>();
+            List<KafkaListenerDeadLetterDocument> listenerDeadLetterDocuments = new ArrayList<>();
 
             for (KafkaPublisherDeadLetterDocument document : documents) {
                 try {
                     log.debug("Processing KafkaPublisherDeadLetterDocument: category={}, id={}",
                             document.getCategory(), document.getId());
 
-                    MemberActivityDocument memberActivityDocument = null;
-                    MemberActivityType.Category category = document.getCategory();
+                    // KafkaPublisherDeadLetterDocument를 KafkaListenerDeadLetterDocument로 변환
+                    KafkaListenerDeadLetterDocument listenerDocument;
 
-                    switch (category) {
-                        case POST:
-                            MemberActivityDto.PostActivityRequest postRequest =
-                                    objectMapper.readValue(document.getPayload(), MemberActivityDto.PostActivityRequest.class);
-                            memberActivityDocument = MemberActivityDocument.ofNewPostActivity(
-                                    postRequest.getMemberId(),
-                                    postRequest.getPostId(),
-                                    postRequest.getActivityType()
-                            );
-                            break;
-
-                        case COMMENT:
-                            MemberActivityDto.CommentActivityRequest commentRequest =
-                                    objectMapper.readValue(document.getPayload(), MemberActivityDto.CommentActivityRequest.class);
-                            memberActivityDocument = MemberActivityDocument.ofNewCommentActivity(
-                                    commentRequest.getMemberId(),
-                                    commentRequest.getPostId(),
-                                    commentRequest.getCommentId(),
-                                    commentRequest.getActivityType()
-                            );
-                            break;
-
-                        case POST_LIKE:
-                            MemberActivityDto.PostLikeActivityRequest postLikeRequest =
-                                    objectMapper.readValue(document.getPayload(), MemberActivityDto.PostLikeActivityRequest.class);
-                            memberActivityDocument = MemberActivityDocument.ofNewPostLikeActivity(
-                                    postLikeRequest.getMemberId(),
-                                    postLikeRequest.getPostId(),
-                                    postLikeRequest.getActivityType()
-                            );
-                            break;
-
-                        case COMMENT_LIKE:
-                            MemberActivityDto.CommentLikeActivityRequest commentLikeRequest =
-                                    objectMapper.readValue(document.getPayload(), MemberActivityDto.CommentLikeActivityRequest.class);
-                            memberActivityDocument = MemberActivityDocument.ofNewCommentLikeActivity(
-                                    commentLikeRequest.getMemberId(),
-                                    commentLikeRequest.getCommentId(),
-                                    commentLikeRequest.getActivityType()
-                            );
-                            break;
-
-                        default:
-                            log.warn("Unknown category: {}", category);
-                            continue;
+                    if (document.getMessageKey() != null && !document.getMessageKey().isEmpty()) {
+                        listenerDocument = KafkaListenerDeadLetterDocument.newDeadLetter(
+                                document.getMessageKey(),
+                                document.getPayload(),
+                                document.getCategory()
+                        );
+                    } else {
+                        listenerDocument = KafkaListenerDeadLetterDocument.newDeadLetter(
+                                document.getPayload(),
+                                document.getCategory()
+                        );
                     }
 
-                    if (memberActivityDocument != null) {
-                        memberActivityDocuments.add(memberActivityDocument);
-                        log.debug("Successfully converted to MemberActivityDocument: category={}", category);
-                    }
+                    listenerDeadLetterDocuments.add(listenerDocument);
+                    log.debug("Successfully converted to KafkaListenerDeadLetterDocument: category={}", document.getCategory());
 
                 } catch (Exception e) {
                     log.error("Error processing KafkaPublisherDeadLetterDocument: id={}, category={}, error={}",
@@ -195,36 +157,36 @@ public class PublishDeadletterRestoreJobConfig {
                 }
             }
 
-            log.info("Processed {} documents into {} MemberActivityDocuments",
-                    documents.size(), memberActivityDocuments.size());
-            return memberActivityDocuments.isEmpty() ? null : memberActivityDocuments;
+            log.info("Processed {} documents into {} KafkaListenerDeadLetterDocuments",
+                    documents.size(), listenerDeadLetterDocuments.size());
+            return listenerDeadLetterDocuments.isEmpty() ? null : listenerDeadLetterDocuments;
         };
     }
 
     @Bean
     @StepScope
-    public ItemWriter<List<MemberActivityDocument>> publishMemberActivityWriter() {
+    public ItemWriter<List<KafkaListenerDeadLetterDocument>> kafkaListenerDeadLetterWriter() {
         return chunk -> {
-            List<MemberActivityDocument> allMemberActivities = new ArrayList<>();
+            List<KafkaListenerDeadLetterDocument> allListenerDeadLetters = new ArrayList<>();
 
-            // chunk.getItems()는 List<List<MemberActivityDocument>> 이므로 flatten
-            for (List<MemberActivityDocument> memberActivityList : chunk.getItems()) {
-                if (memberActivityList != null && !memberActivityList.isEmpty()) {
-                    allMemberActivities.addAll(memberActivityList);
+            // chunk.getItems()는 List<List<KafkaListenerDeadLetterDocument>> 이므로 flatten
+            for (List<KafkaListenerDeadLetterDocument> listenerDeadLetterList : chunk.getItems()) {
+                if (listenerDeadLetterList != null && !listenerDeadLetterList.isEmpty()) {
+                    allListenerDeadLetters.addAll(listenerDeadLetterList);
                 }
             }
 
-            if (allMemberActivities.isEmpty()) {
+            if (allListenerDeadLetters.isEmpty()) {
                 log.info("No documents to save in this chunk");
                 currentBatchDocuments.remove();
                 return;
             }
 
             try {
-                // member_activities 컬렉션에 저장
-                memberActivityMongoRepository.saveAll(allMemberActivities);
-                log.info("Saved {} member activities to member_activities collection",
-                        allMemberActivities.size());
+                // kafka_listener_dead_letters 컬렉션에 저장
+                kafkaListenerDeadLetterMongoTemplate.upsertAll(allListenerDeadLetters);
+                log.info("Saved {} listener dead letters to kafka_listener_dead_letters collection",
+                        allListenerDeadLetters.size());
 
                 // kafka_publisher_dead_letters 문서의 isCompleted를 true로 업데이트
                 List<KafkaPublisherDeadLetterDocument> documentsToUpdate = currentBatchDocuments.get();
@@ -249,7 +211,7 @@ public class PublishDeadletterRestoreJobConfig {
                 currentBatchDocuments.remove();
 
             } catch (Exception e) {
-                log.error("Failed to save member activities. Transaction will rollback.", e);
+                log.error("Failed to save listener dead letters. Transaction will rollback.", e);
 
                 // ThreadLocal 정리
                 currentBatchDocuments.remove();
