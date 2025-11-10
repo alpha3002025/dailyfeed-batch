@@ -1,7 +1,7 @@
-package click.dailyfeed.batch.config.activity.listener.restore;
+package click.dailyfeed.batch.config.job.activity.listener.restore;
 
 import click.dailyfeed.batch.domain.activity.deadletters.document.ListenerDeadLetterDocument;
-import click.dailyfeed.batch.domain.activity.deadletters.mongo.ListenerDeadLetterRepository;
+import click.dailyfeed.batch.domain.activity.deadletters.repository.mongo.ListenerDeadLetterRepository;
 import click.dailyfeed.batch.domain.activity.member.document.MemberActivityDocument;
 import click.dailyfeed.batch.domain.activity.member.mapper.MemberActivityMapper;
 import click.dailyfeed.batch.domain.activity.member.repository.mongo.MemberActivityMongoRepository;
@@ -53,22 +53,22 @@ public class ActivityListenerRestoreFromMongoDBBatchConfig {
     }
 
     @Bean
-    public Job activityListenerRestoreFromRedisJob(
+    public Job activityListenerRestoreFromMongoDBJob(
             JobRepository jobRepository,
-            Step activityListenerRestoreFromRedisStep) {
-        return new JobBuilder("activityListenerRestoreFromRedisJob", jobRepository)
-                .start(activityListenerRestoreFromRedisStep)
+            Step activityListenerRestoreFromMongoDBStep) {
+        return new JobBuilder("activityListenerRestoreFromMongoDBJob", jobRepository)
+                .start(activityListenerRestoreFromMongoDBStep)
                 .build();
     }
 
     @Bean
-    public Step activityListenerRestoreFromRedisStep(
+    public Step activityListenerRestoreFromMongoDBStep(
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
             ItemReader<List<ListenerDeadLetterDocument>> listenerDeadLetterReader,
             ItemProcessor<List<ListenerDeadLetterDocument>, List<MemberActivityDocument>> listenerDeadLetterProcessor,
             ItemWriter<List<MemberActivityDocument>> memberActivityWriter) {
-        return new StepBuilder("activityListenerRestoreFromRedisStep", jobRepository)
+        return new StepBuilder("activityListenerRestoreFromMongoDBStep", jobRepository)
                 .<List<ListenerDeadLetterDocument>, List<MemberActivityDocument>>chunk(1, transactionManager)
                 .reader(listenerDeadLetterReader)
                 .processor(listenerDeadLetterProcessor)

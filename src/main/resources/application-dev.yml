@@ -140,6 +140,12 @@ infrastructure:
   mongodb:
     timeline:
       database: dailyfeed
+  redis:
+    event-queue:
+      member-activity-event:
+        list-key: MEMBER_ACTIVITY_EVENT_HISTORY
+        dead-letter-list-key: MEMBER_ACTIVITY_EVENT_HISTORY_DEAD
+        batch-size: 1000
 # JWT 설정
 jwt:
   access:
@@ -148,3 +154,9 @@ jwt:
   refresh:
     expiration:
       days: 30   # 30일
+  key:
+    rotation:
+      hours: 24  # 24시간마다 키 로테이션
+    grace:
+      period:
+        hours: 48  # 이전 키 유효 기간

@@ -1,4 +1,4 @@
-package click.dailyfeed.batch.domain.activity.deadletters.mongo;
+package click.dailyfeed.batch.domain.activity.deadletters.repository.mongo;
 
 import click.dailyfeed.batch.domain.activity.deadletters.document.ListenerDeadLetterDocument;
 import org.bson.types.ObjectId;

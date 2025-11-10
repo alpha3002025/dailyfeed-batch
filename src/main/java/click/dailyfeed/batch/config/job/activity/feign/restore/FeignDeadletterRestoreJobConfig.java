@@ -1,4 +1,4 @@
-package click.dailyfeed.batch.config.activity.feign.restore;
+package click.dailyfeed.batch.config.job.activity.feign.restore;
 
 import click.dailyfeed.batch.domain.activity.member.document.MemberActivityDocument;
 import click.dailyfeed.batch.domain.activity.member.repository.mongo.MemberActivityMongoRepository;

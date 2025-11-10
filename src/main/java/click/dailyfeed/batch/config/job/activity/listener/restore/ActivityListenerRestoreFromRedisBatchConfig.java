@@ -1,7 +1,7 @@
-package click.dailyfeed.batch.config.activity.listener.restore;
+package click.dailyfeed.batch.config.job.activity.listener.restore;
 
 import click.dailyfeed.batch.domain.activity.deadletters.document.ListenerDeadLetterDocument;
-import click.dailyfeed.batch.domain.activity.deadletters.mongo.ListenerDeadLetterRepository;
+import click.dailyfeed.batch.domain.activity.deadletters.repository.mongo.ListenerDeadLetterRepository;
 import click.dailyfeed.code.domain.activity.transport.MemberActivityTransportDto;
 import click.dailyfeed.code.domain.activity.type.MemberActivityType;
 import click.dailyfeed.kafka.domain.activity.redis.MemberActivityEventDLQRedisService;

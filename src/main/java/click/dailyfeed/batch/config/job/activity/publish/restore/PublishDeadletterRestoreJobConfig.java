@@ -1,4 +1,4 @@
-package click.dailyfeed.batch.config.activity.publish.restore;
+package click.dailyfeed.batch.config.job.activity.publish.restore;
 
 import click.dailyfeed.deadletter.domain.deadletter.document.KafkaListenerDeadLetterDocument;
 import click.dailyfeed.deadletter.domain.deadletter.document.KafkaPublisherDeadLetterDocument;

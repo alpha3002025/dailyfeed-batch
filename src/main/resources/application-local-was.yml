@@ -4,7 +4,8 @@ spring:
   # Spring Batch 설정
   batch:
     job:
-      enabled: false  # 애플리케이션 시작 시 자동 실행 방지
+      enabled: true  # 애플리케이션 시작 시 자동 실행
+      name: ${spring.batch.job.name:NONE}  # 파라미터로 지정된 job만 실행
     jdbc:
       initialize-schema: always  # 배치 메타데이터 테이블 자동 생성
   config:
@@ -45,7 +46,7 @@ spring:
       write-dates-as-timestamps: false
   ## kafka
   kafka:
-    bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
+    bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:29092}
     listener:
       ack-mode: manual_immediate # 수동 커밋
       concurrency: 3 # 컨슈머 스레드 수
@@ -140,6 +141,12 @@ infrastructure:
   mongodb:
     timeline:
       database: dailyfeed
+  redis:
+    event-queue:
+      member-activity-event:
+        list-key: MEMBER_ACTIVITY_EVENT_HISTORY
+        dead-letter-list-key: MEMBER_ACTIVITY_EVENT_HISTORY_DEAD
+        batch-size: 1000
 # JWT 설정
 jwt:
   access:
