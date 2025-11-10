@@ -7,30 +7,9 @@ spring:
       enabled: false  # 애플리케이션 시작 시 자동 실행 방지
     jdbc:
       initialize-schema: always  # 배치 메타데이터 테이블 자동 생성
-  # H2 콘솔 활성화
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  data:
-    redis:
-      port: ${REDIS_PORT:26379}
-      host: ${REDIS_HOST:localhost}
-      password: ${REDIS_PASSWORD:}
-    mongodb:
-      protocol: mongodb # mongodb+srv or mongodb (atlas 에서만 mongodb+srv)
-      uri: ${MONGODB_CONNECTION_URI:mongodb://localhost:27017/dailyfeed?directConnection=true}
-  # JPA 설정
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    database-platform: org.hibernate.dialect.MySQL8Dialect
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
-        default_batch_fetch_size: 100
+  config:
+    import:
+      - classpath:feign-config-local-was.yaml
   # 데이터소스 설정
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
@@ -43,6 +22,66 @@ spring:
       username: ${MYSQL_USERNAME:dailyfeed}
       password: ${MYSQL_PASSWORD:hitEnter###}
       schema: ${MYSQL_SCHEMA:dailyfeed}
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100
+  data:
+    redis:
+      port: ${REDIS_PORT:26379}
+      host: ${REDIS_HOST:localhost}
+    mongodb:
+      protocol: mongodb # mongodb+srv or mongodb (atlas 에서만 mongodb+srv)
+      uri: ${MONGODB_CONNECTION_URI:mongodb://localhost:27017/dailyfeed?directConnection=true}
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  ## kafka
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:9092}
+    listener:
+      ack-mode: manual_immediate # 수동 커밋
+      concurrency: 3 # 컨슈머 스레드 수
+      poll-timeout: 3000
+      missing-topics-fatal: false  # 토픽이 없어도 시작 가능
+    consumer:
+      group-id: ${spring.application.name}-group
+      auto-offset-reset: latest
+      enable-auto-commit: false # At Least Once 를 위한 수동 커밋
+      max-poll-records: 500
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "click.dailyfeed.code.domain.content,click.dailyfeed.code.domain.member"
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+        max.poll.interval.ms: 300000
+        isolation.level: read_committed
+        partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: 1
+      retries: 3
+      batch-size: 32768
+      linger-ms: 20
+      buffer-memory: 33554432
+      compression-type: snappy
+      properties:
+        enable.idempotence: false
+        max.in.flight.requests.per.connection: 5
+        spring.json.add.type.headers: false
+        #        spring.json.trusted.packages: "click.dailyfeed.code.domain.content.post.dto"
+        spring.json.trusted.packages: "*"
+        retry.backoff.ms: 100
+        request.timeout.ms: 30000
 # 로깅 설정
 logging:
   level:
@@ -52,57 +91,60 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
-
+## dailyfeed properties
 dailyfeed:
-  batch:
-    restore-failure:
-      member-activity:
-        publisher-file-path: ./kafka-failure-storage
-        listener-file-path: ./kafka-listener-failure-storage
-
-
+  scheduling:
+    health-check:
+      enabled: true  # Health Check 스케줄러 활성화
+  services:
+    member:
+      feign:
+        url: ${MEMBER_SERVICE_URL:http://localhost:8084}
+        timeout:
+          connect: 5000
+          read: 10000
+    timeline:
+      feign:
+        url: ${TIMELINE_SERVICE_URL:http://localhost:8082}
+        timeout:
+          connect: 5000
+          read: 10000
+    content:
+      feign:
+        url: ${CONTENT_SERVICE_URL:http://localhost:8081}
+        timeout:
+          connect: 5000
+          read: 10000
+      comment:
+        max-depth: 2    # 댓글 최대 깊이
+        page-size: 20   # 기본 페이지 크기
+    search:
+      feign:
+        url: ${SEARCH_SERVICE_URL:http://localhost:8083}
+        timeout:
+          connect: 5000
+          read: 10000
+    image:
+      feign:
+        url: ${IMAGE_SERVICE_URL:http://localhost:8085}
+        timeout:
+          connect: 5000
+          read: 10000
+    activity:
+      feign:
+        url: ${ACTIVITY_SERVICE_URL:http://localhost:8086}
+        timeout:
+          connect: 5000
+          read: 10000
 infrastructure:
   mongodb:
     timeline:
       database: dailyfeed
-  redis:
-    event-queue:
-      member-activity-event:
-        list-key: MEMBER_ACTIVITY_EVENT_HISTORY
-        dead-letter-list-key: MEMBER_ACTIVITY_EVENT_HISTORY_DEAD
-        batch-size: 1000
-  kafka:
-    default:
-      producer:
-        partition: 6
-        replication-factor: 2
-        compression: snappy
-        retention-ms: 604800000 # 7일
-        operation-timeout-seconds: 30
-    topic:
-      post-activity:
-        prefix: post-activity-
-        prefix-date-format: yyyyMMdd
-        retention-ms: 604800000 # 7일
-        min-insync.replicas: 1 # 쓰기 작업에 필요한 최소 동기화된 레플리카 수
-    consumers:
-      # Post Activity Consumer
-      post-activity:
-        group-id: post-activity-consumer-group
-        concurrency: 3
-      # User Activity Consumer 설정
-      user-activity:
-        group-id: user-activity-consumer-group
-        concurrency: 2
-      # Notification Consumer 설정
-      notification:
-        group-id: notification-consumer-group
-        concurrency: 1
-server:
-  port: ${SERVER_PORT:8086}
-#  servlet:
-#    context-path: /
-#  compression:
-#    enabled: true
-#    mime-types: application/json,text/plain
-#    min-response-size: 1024
+# JWT 설정
+jwt:
+  access:
+    expiration:
+      hours: 24  # 24시간
+  refresh:
+    expiration:
+      days: 30   # 30일

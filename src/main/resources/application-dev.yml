@@ -9,7 +9,7 @@ spring:
       initialize-schema: always  # 배치 메타데이터 테이블 자동 생성
   config:
     import:
-      - classpath:feign-config-local.yaml
+      - classpath:feign-config-dev.yaml
   # 데이터소스 설정
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
@@ -36,10 +36,10 @@ spring:
   data:
     redis:
       port: ${REDIS_PORT:26379}
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis-master.infra.svc.cluster.local}
     mongodb:
-      protocol: mongodb # mongodb+srv or mongodb (atlas 에서만 mongodb+srv)
-      uri: ${MONGODB_CONNECTION_URI:mongodb://localhost:27017/dailyfeed?directConnection=true}
+      protocol: mongodb+srv # mongodb+srv or mongodb (atlas 에서만 mongodb+srv)
+      uri: ${MONGODB_CONNECTION_URI}
   jackson:
     serialization:
       write-dates-as-timestamps: false
