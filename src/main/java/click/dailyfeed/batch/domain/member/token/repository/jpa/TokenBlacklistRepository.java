@@ -1,6 +1,6 @@
-package click.dailyfeed.batch.domain.token.repository.jpa;
+package click.dailyfeed.batch.domain.member.token.repository.jpa;
 
-import click.dailyfeed.batch.domain.token.entity.TokenBlacklist;
+import click.dailyfeed.batch.domain.member.token.entity.TokenBlacklist;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

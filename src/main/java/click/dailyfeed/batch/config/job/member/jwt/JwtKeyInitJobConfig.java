@@ -1,6 +1,6 @@
-package click.dailyfeed.batch.config.job.jwt;
+package click.dailyfeed.batch.config.job.member.jwt;
 
-import click.dailyfeed.batch.domain.jwt.service.JwtKeyRotationService;
+import click.dailyfeed.batch.domain.member.jwt.service.JwtKeyInitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -17,34 +17,34 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class JwtKeyRotationJobConfig {
+public class JwtKeyInitJobConfig {
 
-    private final JwtKeyRotationService jwtKeyRotationService;
+    private final JwtKeyInitService jwtKeyInitService;
 
     @Bean
-    public Job jwtKeyRotationJob(
+    public Job jwtKeyInitJob(
             JobRepository jobRepository,
-            Step jwtKeyRotationStep) {
-        return new JobBuilder("jwtKeyRotationJob", jobRepository)
-                .start(jwtKeyRotationStep)
+            Step jwtKeyInitStep) {
+        return new JobBuilder("jwtKeyInitJob", jobRepository)
+                .start(jwtKeyInitStep)
                 .build();
     }
 
     @Bean
-    public Step jwtKeyRotationStep(
+    public Step jwtKeyInitStep(
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
-            Tasklet jwtKeyRotationTasklet) {
-        return new StepBuilder("jwtKeyRotationStep", jobRepository)
-                .tasklet(jwtKeyRotationTasklet, transactionManager)
+            Tasklet jwtKeyInitTasklet) {
+        return new StepBuilder("jwtKeyInitStep", jobRepository)
+                .tasklet(jwtKeyInitTasklet, transactionManager)
                 .build();
     }
 
     @Bean
-    public Tasklet jwtKeyRotationTasklet() {
+    public Tasklet jwtKeyInitTasklet() {
         return (contribution, chunkContext) -> {
-            log.info("Executing JWT Key Rotation Tasklet");
-            jwtKeyRotationService.rotateKeysIfNeeded();
+            log.info("Executing JWT Key Initialization Tasklet");
+            jwtKeyInitService.initializeJwtKey();
             return RepeatStatus.FINISHED;
         };
     }

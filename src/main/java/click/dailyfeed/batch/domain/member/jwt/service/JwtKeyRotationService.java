@@ -1,7 +1,7 @@
-package click.dailyfeed.batch.domain.jwt.service;
+package click.dailyfeed.batch.domain.member.jwt.service;
 
-import click.dailyfeed.batch.domain.jwt.entity.JwtKey;
-import click.dailyfeed.batch.domain.jwt.repository.jpa.JwtKeyRepository;
+import click.dailyfeed.batch.domain.member.jwt.entity.JwtKey;
+import click.dailyfeed.batch.domain.member.jwt.repository.jpa.JwtKeyRepository;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

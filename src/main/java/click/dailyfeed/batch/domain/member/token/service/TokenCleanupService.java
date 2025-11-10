@@ -1,7 +1,7 @@
-package click.dailyfeed.batch.domain.token.service;
+package click.dailyfeed.batch.domain.member.token.service;
 
-import click.dailyfeed.batch.domain.token.repository.jpa.RefreshTokenRepository;
-import click.dailyfeed.batch.domain.token.repository.jpa.TokenBlacklistRepository;
+import click.dailyfeed.batch.domain.member.token.repository.jpa.RefreshTokenRepository;
+import click.dailyfeed.batch.domain.member.token.repository.jpa.TokenBlacklistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

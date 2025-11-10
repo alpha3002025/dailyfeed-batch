@@ -1,6 +1,6 @@
-package click.dailyfeed.batch.config.job.jwt;
+package click.dailyfeed.batch.config.job.member.jwt;
 
-import click.dailyfeed.batch.domain.jwt.service.JwtKeyInitService;
+import click.dailyfeed.batch.domain.member.jwt.service.JwtKeyRotationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -17,34 +17,34 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class JwtKeyInitJobConfig {
+public class JwtKeyRotationJobConfig {
 
-    private final JwtKeyInitService jwtKeyInitService;
+    private final JwtKeyRotationService jwtKeyRotationService;
 
     @Bean
-    public Job jwtKeyInitJob(
+    public Job jwtKeyRotationJob(
             JobRepository jobRepository,
-            Step jwtKeyInitStep) {
-        return new JobBuilder("jwtKeyInitJob", jobRepository)
-                .start(jwtKeyInitStep)
+            Step jwtKeyRotationStep) {
+        return new JobBuilder("jwtKeyRotationJob", jobRepository)
+                .start(jwtKeyRotationStep)
                 .build();
     }
 
     @Bean
-    public Step jwtKeyInitStep(
+    public Step jwtKeyRotationStep(
             JobRepository jobRepository,
             PlatformTransactionManager transactionManager,
-            Tasklet jwtKeyInitTasklet) {
-        return new StepBuilder("jwtKeyInitStep", jobRepository)
-                .tasklet(jwtKeyInitTasklet, transactionManager)
+            Tasklet jwtKeyRotationTasklet) {
+        return new StepBuilder("jwtKeyRotationStep", jobRepository)
+                .tasklet(jwtKeyRotationTasklet, transactionManager)
                 .build();
     }
 
     @Bean
-    public Tasklet jwtKeyInitTasklet() {
+    public Tasklet jwtKeyRotationTasklet() {
         return (contribution, chunkContext) -> {
-            log.info("Executing JWT Key Initialization Tasklet");
-            jwtKeyInitService.initializeJwtKey();
+            log.info("Executing JWT Key Rotation Tasklet");
+            jwtKeyRotationService.rotateKeysIfNeeded();
             return RepeatStatus.FINISHED;
         };
     }

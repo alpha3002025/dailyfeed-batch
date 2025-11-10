@@ -1,6 +1,6 @@
-package click.dailyfeed.batch.config.job.token;
+package click.dailyfeed.batch.config.job.member.token;
 
-import click.dailyfeed.batch.domain.token.service.TokenCleanupService;
+import click.dailyfeed.batch.domain.member.token.service.TokenCleanupService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;

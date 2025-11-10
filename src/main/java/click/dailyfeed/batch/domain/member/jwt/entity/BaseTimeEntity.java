@@ -1,4 +1,4 @@
-package click.dailyfeed.batch.domain.jwt.entity;
+package click.dailyfeed.batch.domain.member.jwt.entity;
 
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;

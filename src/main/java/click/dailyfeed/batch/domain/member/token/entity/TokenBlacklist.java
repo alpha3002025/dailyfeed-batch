@@ -1,6 +1,6 @@
-package click.dailyfeed.batch.domain.token.entity;
+package click.dailyfeed.batch.domain.member.token.entity;
 
-import click.dailyfeed.batch.domain.jwt.entity.BaseTimeEntity;
+import click.dailyfeed.batch.domain.member.jwt.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

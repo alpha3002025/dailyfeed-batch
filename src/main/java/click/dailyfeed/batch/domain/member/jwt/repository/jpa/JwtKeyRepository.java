@@ -1,6 +1,6 @@
-package click.dailyfeed.batch.domain.jwt.repository.jpa;
+package click.dailyfeed.batch.domain.member.jwt.repository.jpa;
 
-import click.dailyfeed.batch.domain.jwt.entity.JwtKey;
+import click.dailyfeed.batch.domain.member.jwt.entity.JwtKey;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
