@@ -5,14 +5,11 @@ import click.dailyfeed.batch.domain.member.token.repository.jpa.TokenBlacklistRe
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 @Slf4j
 @RequiredArgsConstructor
-@Transactional(propagation = Propagation.REQUIRES_NEW)
 @Service
 public class TokenCleanupService {
     private final RefreshTokenRepository refreshTokenRepository;
@@ -27,13 +24,15 @@ public class TokenCleanupService {
         LocalDateTime now = LocalDateTime.now();
         log.info("🧹 Starting token cleanup at {}", now);
 
-        int deletedRefreshTokens = refreshTokenRepository.deleteExpiredTokens(now);
-        log.info("Deleted {} expired refresh tokens", deletedRefreshTokens);
+        var expiredRefreshTokens = refreshTokenRepository.findExpiredTokens(now);
+        refreshTokenRepository.deleteAll(expiredRefreshTokens);
+        log.info("Deleted {} expired refresh tokens", expiredRefreshTokens.size());
 
-        int deletedBlacklistTokens = tokenBlacklistRepository.deleteExpiredTokens(now);
-        log.info("Deleted {} expired blacklist tokens", deletedBlacklistTokens);
+        var expiredBlacklistTokens = tokenBlacklistRepository.findExpiredTokens(now);
+        tokenBlacklistRepository.deleteAll(expiredBlacklistTokens);
+        log.info("Deleted {} expired blacklist tokens", expiredBlacklistTokens.size());
 
         log.info("✅ Token cleanup completed. Total deleted: {} tokens",
-                deletedRefreshTokens + deletedBlacklistTokens);
+                expiredRefreshTokens.size() + expiredBlacklistTokens.size());
     }
 }
