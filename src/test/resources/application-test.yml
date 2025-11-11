@@ -1,0 +1,85 @@
+spring:
+  # H2 In-Memory Database for Testing
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;DATABASE_TO_UPPER=false;INIT=SET IGNORECASE TRUE
+    username: sa
+    password:
+
+  # MongoDB dummy configuration (not actually used in tests)
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+        show_sql: false
+    generate-ddl: false
+
+  # Batch Configuration (must be before sql.init)
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+  # SQL Script initialization
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      continue-on-error: false
+
+  # Main Configuration
+  main:
+    web-application-type: none
+    allow-bean-definition-overriding: true
+
+  # Kafka dummy configuration (not actually used in tests)
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  # Exclude Auto-configurations for testing
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+# Infrastructure configuration (dummy values for tests)
+infrastructure:
+  mongodb:
+    timeline:
+      database: test
+  redis:
+    event-queue:
+      member-activity-event:
+        dead-letter-list-key: test:deadletter:member-activity
+        batch-size: 100
+
+# Batch configuration (dummy values for tests)
+batch:
+  listener-file-path: test-listener-failure-storage
+
+# Logging Configuration
+logging:
+  level:
+    click.dailyfeed: INFO
+    org.springframework.batch: WARN
+    org.hibernate: WARN
+
+# JWT Key Configuration for Testing
+jwt:
+  key:
+    rotation:
+      hours: 1
+    grace:
+      period:
+        hours: 2

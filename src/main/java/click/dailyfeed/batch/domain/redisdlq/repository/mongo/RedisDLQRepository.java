@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.List;
 
 public interface RedisDLQRepository extends MongoRepository<RedisDLQDocument, ObjectId> {
-    List<RedisDLQDocument> findByRedisKey(String redisKey);
+    List<RedisDLQDocument> findByMessageKey(String messageKey);
 
     // isCompleted=false AND isEditing=false 문서 조회
     List<RedisDLQDocument> findByIsCompletedFalseAndIsEditingFalse();

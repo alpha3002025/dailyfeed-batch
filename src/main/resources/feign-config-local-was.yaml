@@ -1,0 +1,188 @@
+# 공통 Feign Client & Resilience4j 설정
+# 모든 환경(local, dev, prod)에서 공통으로 사용되는 Feign Client, Circuit Breaker, Retry 설정
+# 각 환경별 application-{profile}.yaml에서 spring.config.import로 이 파일을 가져옵니다.
+
+# Feign Client 기본 설정
+feign:
+  client:
+    config:
+      default:
+        # 연결 타임아웃 (밀리초)
+        connect-timeout: 5000
+        # 읽기 타임아웃 (밀리초)
+        read-timeout: 10000
+        # 로깅 레벨
+        logger-level: full
+
+# Resilience4j 설정
+resilience4j:
+  circuitbreaker:
+    configs:
+      # 기본 설정 (일반적인 서비스)
+      default:
+        # 슬라이딩 윈도우 타입: COUNT_BASED(호출 횟수 기반) 또는 TIME_BASED(시간 기반)
+        sliding-window-type: COUNT_BASED
+        # 슬라이딩 윈도우 크기: 최근 N개의 호출을 기준으로 실패율 계산
+        sliding-window-size: 100
+        # 최소 호출 횟수: 이 횟수 이상 호출되어야 Circuit Breaker가 실패율을 계산
+        minimum-number-of-calls: 10
+        # 실패율 임계값(%): 이 비율 이상 실패 시 Circuit OPEN
+        failure-rate-threshold: 50
+        # 느린 호출 비율 임계값(%): 이 비율 이상이 느린 호출이면 Circuit OPEN
+        slow-call-rate-threshold: 80
+        # 느린 호출 기준 시간: 이 시간 이상 걸리면 느린 호출로 간주
+        slow-call-duration-threshold: 5s
+        # OPEN 상태 대기 시간: Circuit이 OPEN된 후 HALF_OPEN으로 전환되기까지 대기 시간
+        wait-duration-in-open-state: 60s
+        # HALF_OPEN 상태에서 허용할 호출 수: 이 횟수만큼 테스트 호출 후 CLOSED/OPEN 결정
+        permitted-number-of-calls-in-half-open-state: 10
+        # 자동 전환 활성화: OPEN → HALF_OPEN 자동 전환 여부
+        automatic-transition-from-open-to-half-open-enabled: true
+
+      # 중요 서비스용 (Timeline, Member 등 사용자 UX에 직접 영향)
+      critical:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 50        # 빠른 감지를 위해 작은 윈도우 사용
+        minimum-number-of-calls: 5     # 5번만 호출되어도 패턴 감지
+        failure-rate-threshold: 40     # 더 민감한 임계값 (40% 실패 시 OPEN)
+        slow-call-rate-threshold: 70   # 느린 호출에 대해서도 민감하게 반응
+        slow-call-duration-threshold: 3s  # 3초 이상이면 느린 호출
+        wait-duration-in-open-state: 30s  # 빠른 복구 시도 (30초)
+        permitted-number-of-calls-in-half-open-state: 5  # 적은 테스트 호출로 빠른 결정
+        automatic-transition-from-open-to-half-open-enabled: true
+
+      # 대용량 처리용 (Image 등 느린 응답 허용)
+      bulk:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 200       # 큰 윈도우로 안정적인 패턴 감지
+        minimum-number-of-calls: 20    # 더 많은 샘플로 정확한 판단
+        failure-rate-threshold: 60     # 관대한 임계값 (60% 실패 시 OPEN)
+        slow-call-rate-threshold: 85   # 대부분이 느려도 허용
+        slow-call-duration-threshold: 10s  # 10초까지는 정상으로 간주
+        wait-duration-in-open-state: 120s  # 긴 복구 대기 시간 (2분)
+        permitted-number-of-calls-in-half-open-state: 10  # 충분한 테스트 호출
+        automatic-transition-from-open-to-half-open-enabled: true
+
+      # Health Check 전용 설정 (안전한 엔드포인트만 호출)
+      health-check:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10        # 작은 윈도우로 빠른 감지
+        minimum-number-of-calls: 3     # 3번만 호출되어도 패턴 감지
+        failure-rate-threshold: 50     # 50% 실패 시 OPEN
+        slow-call-rate-threshold: 80
+        slow-call-duration-threshold: 3s
+        wait-duration-in-open-state: 10s  # 빠른 복구 확인 (10초)
+        permitted-number-of-calls-in-half-open-state: 3  # 적은 테스트 호출
+        automatic-transition-from-open-to-half-open-enabled: true
+
+    instances:
+      # 비즈니스 API용 Circuit Breaker
+      timelineService:
+        base-config: critical
+      memberService:
+        base-config: critical
+      contentService:
+        base-config: default
+      imageService:
+        base-config: bulk
+
+      # Health Check 전용 Circuit Breaker
+      timelineServiceHealth:
+        base-config: health-check
+      contentServiceHealth:
+        base-config: health-check
+      activityServiceHealth:
+        base-config: health-check
+      imageServiceHealth:
+        base-config: health-check
+
+  retry:
+    configs:
+      # 기본 재시도 설정
+      default:
+        max-attempts: 3
+        wait-duration: 500ms
+        retry-exceptions:
+          - feign.RetryableException
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+          - java.util.concurrent.TimeoutException
+        ignore-exceptions:
+          - feign.FeignException$BadRequest
+          - feign.FeignException$Unauthorized
+          - feign.FeignException$Forbidden
+          - feign.FeignException$NotFound
+
+      # 빠른 재시도 (사용자 대기 최소화)
+      fast:
+        max-attempts: 2
+        wait-duration: 300ms
+        retry-exceptions:
+          - feign.RetryableException
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+          - java.util.concurrent.TimeoutException
+        ignore-exceptions:
+          - feign.FeignException$BadRequest
+          - feign.FeignException$Unauthorized
+          - feign.FeignException$Forbidden
+          - feign.FeignException$NotFound
+          - feign.FeignException$UnprocessableEntity
+
+      # 보수적 재시도 (대용량 처리)
+      conservative:
+        max-attempts: 2
+        wait-duration: 1s
+        retry-exceptions:
+          - feign.RetryableException
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+          - java.util.concurrent.TimeoutException
+        ignore-exceptions:
+          - feign.FeignException$BadRequest
+          - feign.FeignException$Unauthorized
+          - feign.FeignException$Forbidden
+          - feign.FeignException$NotFound
+
+    instances:
+      timelineService:
+        base-config: fast
+      memberService:
+        base-config: fast
+      contentService:
+        base-config: default
+      imageService:
+        base-config: conservative
+
+  ratelimiter:
+    configs:
+      # 기본 Rate Limiter 설정
+      default:
+        # 제한 갱신 주기: 1초마다 제한이 리셋됨
+        limit-refresh-period: 1s
+        # 갱신 주기당 허용 호출 수: 1초에 100번 호출 가능
+        limit-for-period: 100
+        # 허용량 초과 시 대기 시간: 대기하지 않고 즉시 실패
+        timeout-duration: 0s
+
+      # 중요 서비스용 (더 많은 요청 허용)
+      critical:
+        limit-refresh-period: 1s
+        limit-for-period: 200  # 1초에 200번 호출 가능 (부하가 높을 수 있음)
+        timeout-duration: 100ms  # 100ms까지 대기 후 실패
+
+      # 보수적 Rate Limiter (외부 서비스 보호)
+      conservative:
+        limit-refresh-period: 1s
+        limit-for-period: 50  # 1초에 50번으로 제한 (외부 서비스 부담 감소)
+        timeout-duration: 0s
+
+    instances:
+      timelineService:
+        base-config: critical  # Timeline은 트래픽이 많으므로 여유있게
+      memberService:
+        base-config: critical
+      contentService:
+        base-config: default
+      imageService:
+        base-config: conservative  # Image 서비스는 부담이 크므로 제한

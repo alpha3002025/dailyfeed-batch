@@ -5,6 +5,7 @@ import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @RequiredArgsConstructor
 @Component
+@Profile("!test")
 public class MemberActivityMongoTemplate {
 
     private final MongoTemplate mongoTemplate;
