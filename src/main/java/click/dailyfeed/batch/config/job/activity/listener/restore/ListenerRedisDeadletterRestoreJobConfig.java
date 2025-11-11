@@ -18,12 +18,14 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
+@Profile("!test")
 @Configuration
 public class ListenerRedisDeadletterRestoreJobConfig {
 
