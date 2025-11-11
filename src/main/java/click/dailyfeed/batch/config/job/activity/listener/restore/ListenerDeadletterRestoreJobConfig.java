@@ -1,5 +1,6 @@
 package click.dailyfeed.batch.config.job.activity.listener.restore;
 
+import click.dailyfeed.batch.config.job.incrementer.RequestedAtSimpleIncrementer;
 import click.dailyfeed.batch.domain.activity.member.document.MemberActivityDocument;
 import click.dailyfeed.batch.domain.activity.member.repository.mongo.MemberActivityMongoTemplate;
 import click.dailyfeed.deadletter.domain.deadletter.document.KafkaListenerDeadLetterDocument;
@@ -52,6 +53,7 @@ public class ListenerDeadletterRestoreJobConfig {
             JobRepository jobRepository,
             Step listenerDeadletterRestoreStep) {
         return new JobBuilder("listenerDeadletterRestoreJob", jobRepository)
+                .incrementer(new RequestedAtSimpleIncrementer())
                 .start(listenerDeadletterRestoreStep)
                 .build();
     }

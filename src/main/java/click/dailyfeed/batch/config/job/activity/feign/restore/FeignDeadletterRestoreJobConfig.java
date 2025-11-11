@@ -1,5 +1,6 @@
 package click.dailyfeed.batch.config.job.activity.feign.restore;
 
+import click.dailyfeed.batch.config.job.incrementer.RequestedAtSimpleIncrementer;
 import click.dailyfeed.batch.domain.activity.member.document.MemberActivityDocument;
 import click.dailyfeed.batch.domain.activity.member.repository.mongo.MemberActivityMongoRepository;
 import click.dailyfeed.deadletter.domain.deadletter.document.FeignDeadLetterDocument;
@@ -52,6 +53,7 @@ public class FeignDeadletterRestoreJobConfig {
             JobRepository jobRepository,
             Step feignDeadletterRestoreStep) {
         return new JobBuilder("feignDeadletterRestoreJob", jobRepository)
+                .incrementer(new RequestedAtSimpleIncrementer())
                 .start(feignDeadletterRestoreStep)
                 .build();
     }

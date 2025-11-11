@@ -1,5 +1,6 @@
 package click.dailyfeed.batch.config.job.member.jwt;
 
+import click.dailyfeed.batch.config.job.incrementer.RequestedAtSimpleIncrementer;
 import click.dailyfeed.batch.domain.member.jwt.service.JwtKeyInitService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class JwtKeyInitJobConfig {
             JobRepository jobRepository,
             Step jwtKeyInitStep) {
         return new JobBuilder("jwtKeyInitJob", jobRepository)
+                .incrementer(new RequestedAtSimpleIncrementer())
                 .start(jwtKeyInitStep)
                 .build();
     }

@@ -1,5 +1,6 @@
 package click.dailyfeed.batch.config.job.activity.listener.restore;
 
+import click.dailyfeed.batch.config.job.incrementer.RequestedAtSimpleIncrementer;
 import click.dailyfeed.batch.domain.activity.deadletters.document.ListenerDeadLetterDocument;
 import click.dailyfeed.batch.domain.activity.deadletters.repository.mongo.ListenerDeadLetterRepository;
 import click.dailyfeed.batch.domain.activity.member.mapper.MemberActivityMapper;
@@ -80,6 +81,7 @@ public class ActivityListenerRestoreFromFileBatchConfig {
             JobRepository jobRepository,
             Step activityListenerRestoreFromFileStep) {
         return new JobBuilder("activityListenerRestoreFromFileJob", jobRepository)
+                .incrementer(new RequestedAtSimpleIncrementer())
                 .start(activityListenerRestoreFromFileStep)
                 .build();
     }

@@ -1,5 +1,6 @@
 package click.dailyfeed.batch.config.job.activity.listener.restore;
 
+import click.dailyfeed.batch.config.job.incrementer.RequestedAtSimpleIncrementer;
 import click.dailyfeed.batch.domain.activity.member.document.MemberActivityDocument;
 import click.dailyfeed.batch.domain.activity.member.repository.mongo.MemberActivityMongoTemplate;
 import click.dailyfeed.code.domain.activity.transport.MemberActivityTransportDto;
@@ -45,6 +46,7 @@ public class ListenerRedisDeadletterRestoreJobConfig {
             JobRepository jobRepository,
             Step listenerRedisDeadletterRestoreStep) {
         return new JobBuilder("listenerRedisDeadletterRestoreJob", jobRepository)
+                .incrementer(new RequestedAtSimpleIncrementer())
                 .start(listenerRedisDeadletterRestoreStep)
                 .build();
     }

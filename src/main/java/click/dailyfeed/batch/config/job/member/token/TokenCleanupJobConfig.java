@@ -1,5 +1,6 @@
 package click.dailyfeed.batch.config.job.member.token;
 
+import click.dailyfeed.batch.config.job.incrementer.RequestedAtSimpleIncrementer;
 import click.dailyfeed.batch.domain.member.token.service.TokenCleanupService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class TokenCleanupJobConfig {
             JobRepository jobRepository,
             Step tokenCleanupStep) {
         return new JobBuilder("tokenCleanupJob", jobRepository)
+                .incrementer(new RequestedAtSimpleIncrementer())
                 .start(tokenCleanupStep)
                 .build();
     }

@@ -1,5 +1,6 @@
 package click.dailyfeed.batch.config.job.activity.publish.restore;
 
+import click.dailyfeed.batch.config.job.incrementer.RequestedAtSimpleIncrementer;
 import click.dailyfeed.deadletter.domain.deadletter.document.KafkaListenerDeadLetterDocument;
 import click.dailyfeed.deadletter.domain.deadletter.document.KafkaPublisherDeadLetterDocument;
 import click.dailyfeed.deadletter.domain.deadletter.repository.mongo.KafkaListenerDeadLetterMongoTemplate;
@@ -50,6 +51,7 @@ public class PublishDeadletterRestoreJobConfig {
             JobRepository jobRepository,
             Step publishDeadletterRestoreStep) {
         return new JobBuilder("publishDeadletterRestoreJob", jobRepository)
+                .incrementer(new RequestedAtSimpleIncrementer())
                 .start(publishDeadletterRestoreStep)
                 .build();
     }

@@ -5,13 +5,14 @@ import click.dailyfeed.batch.domain.member.token.repository.jpa.TokenBlacklistRe
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 @Slf4j
 @RequiredArgsConstructor
-@Transactional
+@Transactional(propagation = Propagation.REQUIRES_NEW)
 @Service
 public class TokenCleanupService {
     private final RefreshTokenRepository refreshTokenRepository;
