@@ -11,7 +11,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 @SpringBootApplication
 @ComponentScan(basePackages = {
-        "click.dailyfeed.batch"
+        "click.dailyfeed.batch",
+        "click.dailyfeed.code",
+        "click.dailyfeed.deadletter",
+        "click.dailyfeed.redis"
 })
 @EnableJpaRepositories(
         basePackages = "click.dailyfeed.batch.domain.**.repository.jpa"

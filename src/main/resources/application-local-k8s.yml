@@ -4,13 +4,16 @@ spring:
   # Spring Batch 설정
   batch:
     job:
-      enabled: true
+      enabled: true  # 애플리케이션 시작 시 자동 실행
+      name: ${spring.batch.job.name:NONE}  # 파라미터로 지정된 job만 실행
     jdbc:
       initialize-schema: always  # 배치 메타데이터 테이블 자동 생성
+  main:
+    allow-bean-definition-overriding: true
   config:
     import:
-      - classpath:feign-config-local.yaml
-  # 데이터소스 설정
+      - classpath:feign-config-local-k8s.yaml
+  # 데이터소스 설정 (Docker Compose)
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
     url: ${MYSQL_JDBC_URL:jdbc:mysql://localhost:23306/dailyfeed?characterEncoding=UTF-8&serverTimezone=UTC&rewriteBatchedStatements=true}
@@ -39,13 +42,13 @@ spring:
       host: ${REDIS_HOST:localhost}
     mongodb:
       protocol: mongodb # mongodb+srv or mongodb (atlas 에서만 mongodb+srv)
-      uri: ${MONGODB_URI:${MONGODB_CONNECTION_URI:mongodb://localhost:27017/dailyfeed?directConnection=true}}
+      uri: ${MONGODB_CONNECTION_URI:mongodb://localhost:27017/dailyfeed?directConnection=true}
   jackson:
     serialization:
       write-dates-as-timestamps: false
   ## kafka
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_HOST:localhost}:${KAFKA_PORT:29092}
     listener:
       ack-mode: manual_immediate # 수동 커밋
       concurrency: 3 # 컨슈머 스레드 수
@@ -99,7 +102,7 @@ dailyfeed:
   services:
     member:
       feign:
-        url: ${MEMBER_SERVICE_URL:http://localhost:8084}
+        url: ${MEMBER_SERVICE_URL:http://localhost:8888}
         timeout:
           connect: 5000
           read: 10000
@@ -126,7 +129,7 @@ dailyfeed:
           read: 10000
     image:
       feign:
-        url: ${IMAGE_SERVICE_URL:http://localhost:8085}
+        url: ${IMAGE_SERVICE_URL:http://localhost:8889}
         timeout:
           connect: 5000
           read: 10000
@@ -154,9 +157,3 @@ jwt:
   refresh:
     expiration:
       days: 30   # 30일
-  key:
-    rotation:
-      hours: 24  # 24시간마다 키 로테이션
-    grace:
-      period:
-        hours: 48  # 이전 키 유효 기간
